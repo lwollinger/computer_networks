@@ -1,62 +1,71 @@
-# client-server-access-control
-Projeto da Disciplina de Redes de Computadores.
+# Protocolo de Monitoramento de Sensores (IoT)
+Projeto desenvolvido para a disciplina de Redes de Computadores - Engenharia Eletrônica (IFSC).
 
-# DOCUMENTAÇÃO DO PROTOCOLO DE CONTROLE DE ACESSO (RCP22108)
+## 1. Formato da Mensagem (Serialização Bitwise)
 
-## Formato da Mensagem (Serialização Bitwise)
+O protocolo foi projetado para ser eficiente em termos de largura de banda, utilizando um tamanho fixo de **60 bytes** (480 bits). A estrutura divide-se em blocos binários para dados numéricos e um bloco de texto para a localização física.
 
-A mensagem possui um tamanho fixo de **60 bytes** (480 bits) e é serializada usando operações bitwise e struct (para o nome).
-
-### 1.1 Estrutura do Cabeçalho e Data/Hora (8 bytes)
-
-Os primeiros 8 bytes (64 bits) contêm o cabeçalho de controle (20 bits) e o timestamp (37 bits). Os bits não utilizados são preenchidos por '0'.
-
-| Campo | Tamanho (bits) | Posição (Exemplo) | Notas |
+### 1.1 Divisão dos Blocos (Slicing de Memória)
+| Bloco | Tamanho | Conteúdo | Índices de Bytes |
 | :--- | :--- | :--- | :--- |
+| **Controle** | 5 Bytes | Cabeçalho com metadados e valor da leitura. | `0 a 4` |
+| **Data/Hora** | 5 Bytes | Timestamp compactado (38 bits utilizados). | `5 a 9` |
+| **Localização** | 50 Bytes | Identificação do local do sensor (ASCII). | `10 a 59` |
 
+### 1.2 Detalhamento dos Campos (Campos de Bits)
 
-### 1.2 Campo de Nome (50 bytes)
+#### Cabeçalho de Controle (33 bits ativos em 5 Bytes)
+* **Tipo de Mensagem (2 bits):** * `0`: Cadastro
+    * `1`: Leitura Periódica
+    * `2`: Evento/Alarme
+    * `3`: Resposta do Servidor (ACK)
+* **ID do Sensor (10 bits):** Identificador numérico único (0 a 1023).
+* **Tipo de Sensor (4 bits):** Define a grandeza (0=Temp, 1=Presença, 2=Fumaça, etc).
+* **Indicador de Alarme (1 bit):** Flag binária (`0` Normal, `1` Alarme).
+* **Valor do Sensor (16 bits):** Valor inteiro da leitura (0 a 65535).
 
-[cite_start]O campo 'Nome do usuário' [cite: 83] ocupa os últimos 50 bytes da mensagem (50 caracteres ASCII, preenchidos com nulos se não for completo).
-
-## 2. Descrição das Trocas de Mensagem (Fluxo de Comunicação)
-
-O sistema utiliza comunicação TCP/IP, onde cada requisição e resposta ocorre em uma conexão dedicada, que é encerrada após a conclusão da transação.
-
-| Ação | Cliente Envia | Servidor Responde |
-| :--- | :--- | :--- |
-| **ACESSO** | Tipo=0, Porta, Nome, Credencial | [cite_start]Tipo=0, Porta, Nome, Credencial, **Autorização (1 ou 0)** [cite: 32, 41] |
-| **CADASTRO** | Tipo=1, Porta, Nome, Credencial=0 | [cite_start]Tipo=1, Porta, Nome, Autorização=1, **Credencial (Nova gerada)** [cite: 85] |
-
-## 3. Tratamento de Erros de Comunicação
-
-O sistema implementa tratamento de erros em dois níveis:
-
-| Erro | Comportamento do Cliente | Comportamento do Servidor |
-| :--- | :--- | :--- |
-| **Perda de Conexão** | Tenta conectar uma vez e, se falhar, informa o erro e encerra. | Se houver exceção no `recv()` ou `send()`, a thread do cliente é encerrada imediatamente. |
-| **Mensagem Inválida** | Não há tratamento específico; o `recv()` espera um tamanho fixo. | Se o tamanho do pacote recebido for diferente de 58 bytes, o Servidor loga o erro e encerra a conexão. |
-| **Encerramento** | A conexão é encerrada imediatamente após receber a resposta do servidor. | A conexão é encerrada pela thread após processar e enviar a resposta. |
+#### Data e Hora (38 bits ativos em 5 Bytes)
+* **Ano (11 bits):** Armazena o ano com offset de 2000 (Ex: 2026 é enviado como 26).
+* **Mês (4 bits):** 1 a 12.
+* **Dia (5 bits):** 1 a 31.
+* **Hora (5 bits):** 0 a 23.
+* **Minuto (6 bits):** 0 a 59.
+* **Segundo (6 bits):** 0 a 59.
 
 ---
 
-# TUTORIAL: FUNCIONAMENTO DO SISTEMA
+## 2. Fluxo de Comunicação
 
-Este tutorial descreve como iniciar e testar o sistema Cliente/Servidor de controle de acesso.
+O sistema utiliza o protocolo de transporte **TCP**, garantindo a entrega dos pacotes. A comunicação é do tipo "requisição-resposta" com conexões não-persistentes.
 
-## Pré-requisitos
-* Python 3.x instalado.
-* Os arquivos `server.py`, `client.py`, `protocol.py`, e `server_data.py` devem estar no mesmo diretório.
+1. **Cadastro:** O sensor envia seus dados e localização. O servidor registra no arquivo `sensores.txt`.
+2. **Monitoramento:** O sensor envia leituras ou eventos. O servidor processa e salva no `log.txt`.
+3. **Resposta:** Para cada pacote recebido, o servidor devolve uma confirmação (Tipo 3) espelhando os dados para validação no cliente.
 
-## 1. Configuração e Inicialização
+---
 
-### Passo 1: Iniciar o Servidor
-Abra o **primeiro terminal** na pasta `\src` e execute o servidor:
-```bash
-python server.py
-```
-### Passo 2: Iniciar o Cliente
-Abra o **segundo terminal** na pasta `\src` e execute o cliente:
-```bash
-python client.py
-```
+## 3. Armazenamento de Dados (Persistência)
+
+Os dados são persistidos em arquivos `.txt` no diretório do servidor:
+
+* **sensores.txt:** `ID_SENSOR | TIPO | LOCALIZACAO`
+    * *Objetivo:* Manter o inventário de quais sensores estão ativos na planta.
+* **log.txt:** `DATA_HORA | ID | TIPO_MSG | VALOR | ALARME`
+    * *Objetivo:* Histórico para auditoria e análise de eventos.
+
+---
+
+## 4. Tratamento de Erros e Conexão
+
+| Erro | Solução Proposta |
+| :--- | :--- |
+| **Perda de Pacote** | O cliente aguarda o ACK (Tipo 3). Caso não receba, tenta o reenvio 3 vezes. |
+| **Tamanho Inválido** | O servidor descarta qualquer pacote que não possua exatamente 60 bytes. |
+| **Timeout** | Implementado via `socket.settimeout(5)` para evitar travamento da aplicação. |
+| **Truncamento** | Strings de localização superiores a 50 caracteres são cortadas automaticamente. |
+
+---
+
+## 5. Justificativa Técnica
+
+A escolha por **5 bytes** para o controle e **5 bytes** para a data deve-se ao alinhamento de memória. Embora os bits úteis totalizem 71, o uso de 10 bytes (80 bits) permite que o desempacotamento ocorra de forma isolada e limpa, evitando que bits de data e bits de controle compartilhem o mesmo byte, o que simplifica a lógica de `shift` e `mask`.
