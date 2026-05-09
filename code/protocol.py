@@ -24,12 +24,18 @@ TAM_HORA = 5         # 0-23 horas
 TAM_MINUTO = 6       # 0-59 minutos
 TAM_SEGUNDO = 6      # 0-59 segundos
 
-# Nome do Usuário (50 caracteres) --> 50 Bytes
-TAM_NOME_BYTES = 50  # 50 caracteres * 1 byte/char (pela tabela ASCII) 
+# Localização do Sensor (50 caracteres) --> 50 Bytes
+TAM_LOCALIZACAO_BYTES = 50 # Total de 60 bytes # 50 caracteres * 1 byte/char (pela tabela ASCII)  
+'''
+    O campo de Localização foi definido com 50 bytes (ASCII) 
+    para permitir descrições detalhadas da instalação física do sensor, 
+    como por exemplo: 'Bloco B - Sala 204 - Rack de Servidores', 
+    facilitando a identificação rápida em caso de alarme."
+'''
 
 # Tamanho Total da Mensagem
 TAM_CABECALHO_E_DATA_BYTES = 10 # 5 bytes para o cabeçalho (33 bits) + 5 bytes para data/hora (38 bits) = 10 bytes
-TAM_MSG_TOTAL = TAM_CABECALHO_E_DATA_BYTES + TAM_NOME_BYTES # Total de 60 bytes
+TAM_MSG_TOTAL = TAM_CABECALHO_E_DATA_BYTES + TAM_LOCALIZACAO_BYTES # Total de 60 bytes
 
 
 ##################################################################
@@ -101,14 +107,14 @@ def empacotar_requisicao_cliente(tipo_msg, id_sensor, tipo_sensor, valor, alarme
     ####################################
 
     # Formato string de 50 bytes, preenchida com nulos se o nome for menor que 50 caracteres
-    nome_bytes = struct.pack(f'{TAM_NOME_BYTES}s', localizacao.encode('ascii'))
+    local_bytes = struct.pack(f'{TAM_LOCALIZACAO_BYTES}s', localizacao.encode('ascii'))
     
 
     #############################
     # Mensagem Total (59 bytes) #
     #############################
 
-    mensagem_bytes = dados_controle + dados_data_hora + nome_bytes
+    mensagem_bytes = dados_controle + dados_data_hora + local_bytes
     
     return mensagem_bytes
 
@@ -160,7 +166,7 @@ def desempacotar_mensagem(mensagem_bytes):
     # Extração da Localização (os últimos 50 bytes)
     # Agora começa no índice 10 (5 controle + 5 data)
     local_bytes = mensagem_bytes[10:]
-    localizacao = struct.unpack(f'{TAM_NOME_BYTES}s', local_bytes)[0].decode('ascii').strip('\x00')
+    localizacao = struct.unpack(f'{TAM_LOCALIZACAO_BYTES}s', local_bytes)[0].decode('ascii').strip('\x00')
     
     # 2. Divisão dos blocos binários (os primeiros 10 bytes)
     # cabecalho_data_bytes terá 10 bytes no total
