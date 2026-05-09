@@ -1,0 +1,3 @@
+ID:SN-TEMP-001 | Tipo:Temperatura | Local:Laboratório 01
+ID:SN-TEMP-001 | Tipo:Temperatura | Local:Laboratório 01
+ID:SN-TEMP-001 | Tipo:Temperatura | Local:Laboratório 01
