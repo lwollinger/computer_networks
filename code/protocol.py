@@ -11,7 +11,7 @@ import datetime
 # Cabeçalho de Controle (33 bits) --> 5 Bytes
 TAM_TIPO_MSG = 2     # 0=Cad, 1=Leitura, 2=Evento, 3=Resp (2 bits cobrem isso)
 TAM_ID_SENSOR = 10   # Permite até 1024 sensores
-TAM_TIPO_SENSOR = 4  # Até 16 tipos (0=Temp, 1=Presença, 2=Porta)
+TAM_TIPO_SENSOR = 4  # Até 16 tipos (0=Temp, 1=Presença, 2=Porta, 3=falhas_equipamentos)
 TAM_ALARME = 1       # 0=Normal, 1=Alarme
 TAM_VALOR = 16       # Valor do sensor (Inteiro de 16 bits)
 
@@ -220,7 +220,7 @@ def desempacotar_mensagem(mensagem_bytes):
     
     ano = (data_hora & ((1 << TAM_ANO) - 1)) + 2000
 
-    # Retorno dos dados processados
+    # Retorno dos dados processados (Dicionário, analogo a Struct em C, pesquisei como fazia a struct em python e achei que o dicionário era a melhor opção para organizar os dados)
     return {
         "tipo_msg": tipo_msg,       # 0=Cad, 1=Leitura, 2=Evento, 3=Resp
         "id_sensor": id_sensor,

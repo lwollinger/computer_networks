@@ -61,3 +61,4 @@ recebe = con.recv(1024) #recebe mensagem (em bytes, com tamanho max definido pel
 print ("mensagem recebida: ")  
 print(recebe.decode()) 
 socket_servidor.close()
+
