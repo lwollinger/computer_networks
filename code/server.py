@@ -16,49 +16,84 @@
 # (com data e hora, ID do sensor, tipo de evento, valor e indicação de alarme).
 # ======================================================================
 
+import socket
+import protocol
 
-import socket 
+# Configurações do Servidor
+HOST = '127.0.0.1'
+PORT = 65432
 
-def recebe_mensagem_cadastro_cliente():
+def salvar_em_arquivo(nome_arquivo, linha):
     """
-    Recebe a mensagem de cadastro do cliente, desempacota os dados e armazena as informações do sensor em um arquivo de texto.
+    Auxiliar para escrita em .txt
     """
-def recebe_mensagem_leitura():
-    """
-    Recebe a mensagem de leitura do cliente, desempacota os dados e registra o evento em um arquivo de log.
-    """
-def verifica_condicoes_alarme():
-    """
-    Verifica as condições de alarme com base nas leituras recebidas e envia uma resposta ao cliente indicando se o alarme foi acionado ou não.
-    """
-def envia_resposta_cliente():
-    """
-    Envia uma resposta ao cliente indicando se o alarme foi acionado ou não.
-    """
+    with open(nome_arquivo, "a", encoding="utf-8") as f:
+        f.write(linha + "\n")
 
+def recebe_mensagem_cadastro_cliente(dados):
+    """
+        Armazena ID, Tipo e Localização no arquivo de sensores.
+    """
+    linha = f"ID:{dados['id_sensor']} | Tipo:{dados['tipo_sensor']} | Local:{dados['localizacao']}"
+    salvar_em_arquivo("sensores.txt", linha)
+    print(f"[CADASTRO] Sensor {dados['id_sensor']} registrado.")
 
+def recebe_mensagem_leitura(dados):
+    """Registra o evento completo no arquivo de log."""
+    # O PDF pede: data/hora, ID, tipo evento, valor e alarme
+    tipo_evento = "LEITURA" if dados['tipo_msg'] == 1 else "EVENTO"
+    linha = (f"{dados['data_hora']} | ID:{dados['id_sensor']} | "
+             f"Evento:{tipo_evento} | Valor:{dados['valor']} | Alarme:{dados['alarme']}")
+    salvar_em_arquivo("log.txt", linha)
+    print(f"[LOG] Registro do sensor {dados['id_sensor']} salvo.")
 
+def verifica_condicoes_alarme(dados):
+    """
+    Verifica se o valor ultrapassou um limite ou se o bit de alarme veio ativo.
+    Retorna 1 para alarme ativo, 0 para normal.
+    """
+    # Exemplo: se for temperatura (Tipo 1) e passar de 40 graus, força alarme
+    if dados['tipo_sensor'] == 1 and dados['valor'] > 40:
+        return 1
+    # Ou se o próprio sensor já mandou o bit de alarme ativo
+    return dados['alarme']
 
-host = '' 
-porta = 7000 
-addr = (host, porta) 
-#criar o socket para o servidor passando a família do protocolo de transporte 
-#socket.AF_INET define que é um protocolo para rede IP (AF_BLUETOOTH definiria comunicação bluetooth, por exemplo)
-#socket.SOCK_STREAM para TCP
-#socket.SOCK_DGRAM para UDP
-socket_servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#reserva o socket para a nossa aplicação
-socket_servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
-#define quais IP's e em qual porta o server vai aguardar conexão
-socket_servidor.bind(addr) 
-#define que servidor aguarda conexões e quantas conexão serão recebidas. Não é necessário caso UDP
-socket_servidor.listen(10) 
-print ('aguardando conexao')
-con, cliente = socket_servidor.accept() #espera por conexão
-print ('conectado') 
-print ("aguardando mensagem") 
-recebe = con.recv(1024) #recebe mensagem (em bytes, com tamanho max definido pelo parâmetro)
-print ("mensagem recebida: ")  
-print(recebe.decode()) 
-socket_servidor.close()
+def envia_resposta_cliente(conn, pacote_original, status_alarme):
+    """Gera o ACK de 60 bytes e envia."""
+    resposta = protocol.empacotar_resposta_servidor(pacote_original, status_alarme)
+    conn.sendall(resposta)
+    print(f"[RESPOSTA] ACK enviado com status Alarme={status_alarme}")
 
+def iniciar_servidor():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((HOST, PORT))
+    server.listen()
+    print(f"Servidor Rodando em {HOST}:{PORT}...")
+
+    while True:
+        conn, addr = server.accept()
+        try:
+            pacote_bruto = conn.recv(60)
+            if len(pacote_bruto) == 60:
+                # 1. Desempacota os bits
+                dados = protocol.desempacotar_mensagem(pacote_bruto)
+                
+                # 2. Verifica se é Cadastro (0) ou Leitura/Evento (1 e 2)
+                if dados['tipo_msg'] == 0:
+                    recebe_mensagem_cadastro_cliente(dados)
+                else:
+                    recebe_mensagem_leitura(dados)
+                
+                # 3. Processa lógica de alarme
+                status_alarme = verifica_condicoes_alarme(dados)
+                
+                # 4. Responde (ACK)
+                envia_resposta_cliente(conn, pacote_bruto, status_alarme)
+                
+        except Exception as e:
+            print(f"Erro no processamento: {e}")
+        finally:
+            conn.close()
+
+if __name__ == "__main__":
+    iniciar_servidor()

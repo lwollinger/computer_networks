@@ -80,9 +80,8 @@ def enviar_evento_alarme(sensor):
 
 
 
-# Arrumar aqui 
+# Arrumar aqui não testei ainda
 if __name__ == "__main__":
-    # Menu simples para você testar
     while True:
         print("\n--- SIMULADOR DE SENSOR ---")
         print("1. Enviar Cadastro")
