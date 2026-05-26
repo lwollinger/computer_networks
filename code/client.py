@@ -202,13 +202,20 @@ def menu_principal() -> None:
             sensor = selecionar_sensor()
             if sensor:
                 try:
-                    valor = int(input("  Valor da leitura (0-65535): ").strip())
-                    if not 0 <= valor <= 65535:
-                        print("[ERRO] Valor fora do intervalo (0-65535).")
-                        continue
+                    # Sensor de temperatura
+                    if sensor["tipo"] == 0:
+                        temp = float(input("  Temperatura (°C): ").strip())
+                        # Valores, EX: 23.7°C -> 237
+                        valor = int(temp * 10)
+                    # Sensor de presença
+                    elif sensor["tipo"] == 1:
+                        valor = int(input("  Presença (0=Não / 1=Sim): ").strip())
+                        if valor not in (0, 1):
+                            print("[ERRO] Use apenas 0 ou 1.")
+                            continue
                     enviar_leitura(sensor, valor)
                 except ValueError:
-                    print("[ERRO] Digite um número inteiro.")
+                    print("[ERRO] Valor inválido.")
 
         elif opcao == '3':
             sensor = selecionar_sensor()

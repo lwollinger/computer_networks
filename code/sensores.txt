@@ -1,2 +1,1 @@
-ID:101 | Tipo:1 | Local:Laboratorio 01
-ID:0101 | Tipo:TEMPERATURA | Local:Laboratorio 01
+
