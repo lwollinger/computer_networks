@@ -206,7 +206,7 @@ def menu_principal() -> None:
                     if sensor["tipo"] == 0:
                         temp = float(input("  Temperatura (°C): ").strip())
                         # Valores, EX: 23.7°C -> 237
-                        valor = int(temp * 10)
+                        valor = int(temp * 10) # [FIX] Arrumei o valor de temperatura para ser multiplicado por 10, considerando que o protocolo espera um inteiro (ex: 23.7°C → 237).
                     # Sensor de presença
                     elif sensor["tipo"] == 1:
                         valor = int(input("  Presença (0=Não / 1=Sim): ").strip())

@@ -40,7 +40,7 @@ ARQUIVO_LOG      = "log_eventos.txt"
 
 # Limites de alarme por tipo de sensor
 LIMITES_ALARME = {
-    0: 40,   # Temperatura  > 40 °C
+    0: 400,   # Temperatura  > 40,0 °C [FIX] Tipo de sensor corrigido para 0 (Temperatura). Arrumei o limite para 400 (40,0 °C) considerando que o valor vem multiplicado por 10.
     1: None, # Presença     — sem limite numérico, alarme vem pelo bit
     2: None, # Porta/Fumaça — sem limite numérico, alarme vem pelo bit
     3: None, # Falha Equip  — sem limite numérico, alarme vem pelo bit
