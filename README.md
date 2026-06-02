@@ -360,12 +360,3 @@ Resultado esperado:
 
 Validando o mecanismo de retransmissão implementado no cliente.
 
----
-
-# 9. Justificativa da Serialização
-
-Os campos de controle e data/hora utilizam 71 bits úteis, porém são armazenados em 10 bytes (80 bits).
-
-A utilização de 5 bytes para o cabeçalho e 5 bytes para a data/hora simplifica a implementação das operações de serialização e desserialização utilizando máscaras (`mask`) e deslocamentos (`shift`).
-
-Além disso, evita que campos de blocos diferentes compartilhem o mesmo byte, tornando o código mais simples, legível e de fácil manutenção.
