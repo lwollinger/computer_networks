@@ -15,7 +15,7 @@ TAM_TIPO_SENSOR = 4  # Até 16 tipos (0=Temp, 1=Presença, 2=Porta, 3=falhas_equ
 TAM_ALARME = 1       # 0=Normal, 1=Alarme
 TAM_VALOR = 16       # Valor do sensor (Inteiro de 16 bits)
 
-# Data e Hora (38 bits) --> 5 Bytes
+# Data e Hora (37 bits) --> 5 Bytes
 # Definido os tamanhos com base nos valores máximos:
 TAM_DIA = 5          # 0-31 dias
 TAM_MES = 4          # 0-12 meses
@@ -34,7 +34,7 @@ TAM_LOCALIZACAO_BYTES = 50 # Total de 60 bytes # 50 caracteres * 1 byte/char (pe
 '''
 
 # Tamanho Total da Mensagem
-TAM_CABECALHO_E_DATA_BYTES = 10 # 5 bytes para o cabeçalho (33 bits) + 5 bytes para data/hora (38 bits) = 10 bytes
+TAM_CABECALHO_E_DATA_BYTES = 10 # 5 bytes para o cabeçalho (33 bits) + 5 bytes para data/hora (37 bits) = 10 bytes
 TAM_MSG_TOTAL = TAM_CABECALHO_E_DATA_BYTES + TAM_LOCALIZACAO_BYTES # Total de 60 bytes
 
 
